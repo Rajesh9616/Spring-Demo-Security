@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
@@ -18,6 +19,7 @@ import com.example.demo.student.Student;
 
 @Configuration
 @EnableWebSecurity
+@EnableGlobalMethodSecurity(prePostEnabled = true)
 public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
 	
 	private final PasswordEncoder passwordEncoder;
@@ -31,8 +33,15 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
 	@Override
 	protected void configure(HttpSecurity http) throws Exception {
 		http
-			// csrf is enable by-default. 
-			.csrf().disable() 
+			/* csrf is enable by-default.
+			// Disable csrf . Since Its enable by default
+		    // Mainly used for user request while requesting. 
+		    // csrf token is added with cookes and available under XSRF-TOKEN
+			// csrf token will generate automatically and while accessing from angular or any frontend in header
+		    // X-XSRF-TOKEN : token value
+			// Opertation to validate token : POST/PUT/DELETE
+			*/
+			.csrf().disable()
 			
 			.authorizeRequests()
 			// Permit root,index.html,css,js
@@ -41,11 +50,18 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
 			// Specificed user (Student) can accsee the resource. Admin Is not allowed to access the resource
 			.antMatchers("/api/**").hasRole(STUDENT.name())
 			
-			/* URI : /management/api/** Is accessed by Admin and AdminTrainee 	 */
-			.antMatchers(HttpMethod.DELETE,"/management/api/**").hasAuthority(COURSE_WRITE.name())
-			.antMatchers(HttpMethod.POST,"/management/api/**").hasAuthority(COURSE_WRITE.name())
-			.antMatchers(HttpMethod.PUT,"/management/api/**").hasAuthority(COURSE_WRITE.name())
+			/* URI : /management/api/** Is accessed by Admin(rajesh): can perform all operation  and AdminTrainee(ashish) : can perform only read operation  	 */
+			/* ---
+			 	Below order is important 
+			 	These role and permission is replaced with @Preauthrity Annotation in Controller class ("StudentManagementController.java")
+			   	and annotate this class with @EnableGlobalMethodSecurity(prePostEnabled = true)
+			.antMatchers(HttpMethod.DELETE,"/management/api/**").hasAuthority(COURSE_WRITE.getPermission())
+			.antMatchers(HttpMethod.POST,"/management/api/**").hasAuthority(COURSE_WRITE.getPermission())
+			.antMatchers(HttpMethod.PUT,"/management/api/**").hasAuthority(COURSE_WRITE.getPermission())
 			.antMatchers(HttpMethod.GET,"/management/api/**").hasAnyRole(ADMIN.name(),ADMINTRAINEE.name())
+			
+			*/
+			
 			.anyRequest()
 			.authenticated()
 			.and()
@@ -67,7 +83,8 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
 					   2.  Autowire PasswordEncode */
 					.password(this.passwordEncoder.encode("password")) 		
 					// .roles("STUDENT") 	// ROLE_ADMIN
-					.roles(STUDENT.name()) 	// ROLE_STUDENT
+					//.roles(STUDENT.name()) 	// ROLE_STUDENT
+					.authorities(STUDENT.getGrantedAuthorities())
 					.build();
 		
 		UserDetails rajeshUser = User.builder()
@@ -77,7 +94,8 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
 				   2.  Autowire PasswordEncode */
 				.password(this.passwordEncoder.encode("password")) 										  
 				//.roles("ADMIN") 	// ROLE_ADMIN
-				.roles(ADMIN.name())
+				//.roles(ADMIN.name())
+				.authorities(ADMIN.getGrantedAuthorities())
 				.build();
 		
 		
@@ -88,7 +106,8 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
 				   2.  Autowire PasswordEncode */
 				.password(this.passwordEncoder.encode("password")) 										  
 				// ADMINTRAINEE
-				.roles(ADMINTRAINEE.name())
+				//.roles(ADMINTRAINEE.name())
+				.authorities(ADMINTRAINEE.getGrantedAuthorities())
 				.build();
 		
 		return new InMemoryUserDetailsManager(

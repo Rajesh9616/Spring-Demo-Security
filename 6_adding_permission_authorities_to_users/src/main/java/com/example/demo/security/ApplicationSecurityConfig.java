@@ -41,10 +41,13 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
 			// Specificed user (Student) can accsee the resource. Admin Is not allowed to access the resource
 			.antMatchers("/api/**").hasRole(STUDENT.name())
 			
-			/* URI : /management/api/** Is accessed by Admin and AdminTrainee 	 */
-			.antMatchers(HttpMethod.DELETE,"/management/api/**").hasAuthority(COURSE_WRITE.name())
-			.antMatchers(HttpMethod.POST,"/management/api/**").hasAuthority(COURSE_WRITE.name())
-			.antMatchers(HttpMethod.PUT,"/management/api/**").hasAuthority(COURSE_WRITE.name())
+			/* URI : /management/api/** Is accessed by Admin(rajesh): can perform all operation  and AdminTrainee(ashish) : can perform only read operation  	 */
+			/* ---
+			 	Below order is important.
+			   */
+			.antMatchers(HttpMethod.DELETE,"/management/api/**").hasAuthority(COURSE_WRITE.getPermission())
+			.antMatchers(HttpMethod.POST,"/management/api/**").hasAuthority(COURSE_WRITE.getPermission())
+			.antMatchers(HttpMethod.PUT,"/management/api/**").hasAuthority(COURSE_WRITE.getPermission())
 			.antMatchers(HttpMethod.GET,"/management/api/**").hasAnyRole(ADMIN.name(),ADMINTRAINEE.name())
 			.anyRequest()
 			.authenticated()
@@ -67,7 +70,8 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
 					   2.  Autowire PasswordEncode */
 					.password(this.passwordEncoder.encode("password")) 		
 					// .roles("STUDENT") 	// ROLE_ADMIN
-					.roles(STUDENT.name()) 	// ROLE_STUDENT
+					//.roles(STUDENT.name()) 	// ROLE_STUDENT
+					.authorities(STUDENT.getGrantedAuthorities())
 					.build();
 		
 		UserDetails rajeshUser = User.builder()
@@ -77,7 +81,8 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
 				   2.  Autowire PasswordEncode */
 				.password(this.passwordEncoder.encode("password")) 										  
 				//.roles("ADMIN") 	// ROLE_ADMIN
-				.roles(ADMIN.name())
+				//.roles(ADMIN.name())
+				.authorities(ADMIN.getGrantedAuthorities())
 				.build();
 		
 		
@@ -88,7 +93,8 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
 				   2.  Autowire PasswordEncode */
 				.password(this.passwordEncoder.encode("password")) 										  
 				// ADMINTRAINEE
-				.roles(ADMINTRAINEE.name())
+				//.roles(ADMINTRAINEE.name())
+				.authorities(ADMINTRAINEE.getGrantedAuthorities())
 				.build();
 		
 		return new InMemoryUserDetailsManager(
